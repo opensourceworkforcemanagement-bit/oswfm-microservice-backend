@@ -121,22 +121,42 @@ def run_init_sql(init_sql_path):
         print(f"[ERROR] Failed to run init.sql: {e}")
         return False
 
+def get_otel_jvm_args(project_path):
+    """
+    Build the otel javaagent JVM arguments for a service.
+    The agent JAR is copied to target/ by maven-dependency-plugin at prepare-package.
+    The config file lives in src/main/resources/otel.properties for each service.
+    """
+    agent_jar = project_path / 'target' / 'opentelemetry-javaagent.jar'
+    config_file = project_path / 'src' / 'main' / 'resources' / 'otel.properties'
+    if not agent_jar.exists():
+        print(f"[WARNING] OTel agent JAR not found at {agent_jar} — run 'mvn package' first to download it")
+        return ''
+    args = f'-javaagent:{agent_jar}'
+    if config_file.exists():
+        args += f' -Dotel.javaagent.configuration-file={config_file}'
+    return args
+
+
 def launch_spring_boot_project(project_name, project_path, clean=False):
     """Launch Spring Boot project in a new terminal window"""
-    
+
     if not check_pom_exists(project_path):
         print(f"[ERROR] pom.xml not found in {project_path} - Skipping this directory")
         return False
-    
+
     print(f"[INFO] Opening new terminal window for: {project_name}")
-    
+
+    otel_args = get_otel_jvm_args(project_path)
+    otel_maven_flag = f'-Dspring-boot.run.jvmArguments="{otel_args}"' if otel_args else ''
+
     # Determine the OS and launch accordingly
     try:
         if sys.platform == 'win32':
             # Windows
             maven_home = os.environ.get('MAVEN_HOME', '')
             java_home = os.environ.get('JAVA_HOME', '')
-            
+
             clean_cmd = 'mvn clean -Dmaven.test.skip=true && ' if clean else ''
             cmd = (
                 f'start "Spring Boot - {project_name}" cmd /k '
@@ -148,20 +168,20 @@ def launch_spring_boot_project(project_name, project_path, clean=False):
                 f'echo [INFO] Changed to directory: %cd% && '
                 f'echo [INFO] Starting Maven Spring Boot... && '
                 f'{clean_cmd}'
-                f'mvn spring-boot:run -Dmaven.test.skip=true"'
+                f'mvn spring-boot:run -Dmaven.test.skip=true {otel_maven_flag}"'
             )
             subprocess.Popen(cmd, shell=True)
-            
+
         elif sys.platform == 'darwin':
             # macOS
             script = f'''
                 tell application "Terminal"
-                    do script "cd '{project_path}' && echo '[INFO] Starting {project_name}...' && mvn spring-boot:run"
+                    do script "cd '{project_path}' && echo '[INFO] Starting {project_name}...' && mvn spring-boot:run {otel_maven_flag}"
                     activate
                 end tell
             '''
             subprocess.Popen(['osascript', '-e', script])
-            
+
         else:
             # Linux - try various terminal emulators
             terminals = [
@@ -170,9 +190,9 @@ def launch_spring_boot_project(project_name, project_path, clean=False):
                 ['konsole', '-e'],
                 ['xfce4-terminal', '-e']
             ]
-            
-            cmd = f"cd '{project_path}' && echo '[INFO] Starting {project_name}...' && mvn spring-boot:run; exec bash"
-            
+
+            cmd = f"cd '{project_path}' && echo '[INFO] Starting {project_name}...' && mvn spring-boot:run {otel_maven_flag}; exec bash"
+
             launched = False
             for terminal in terminals:
                 try:
@@ -181,7 +201,7 @@ def launch_spring_boot_project(project_name, project_path, clean=False):
                     break
                 except FileNotFoundError:
                     continue
-            
+
             if not launched:
                 print(f"[ERROR] Could not find a suitable terminal emulator for {project_name}")
                 return False

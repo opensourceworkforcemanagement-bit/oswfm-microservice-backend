@@ -10,7 +10,7 @@ import org.springframework.context.annotation.Configuration;
 import lombok.Getter;
 
 @Getter
-@Configuration
+@Configuration("gisTokenConfigurationParameter")
 public class TokenConfigurationParameter {
 
     private final int accessTokenExpireMinute;

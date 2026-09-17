@@ -8,12 +8,14 @@ import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.stereotype.Component;
 
 import java.net.URI;
 import java.util.stream.Collectors;
 
 @Slf4j
-@RestControllerAdvice
+@RestControllerAdvice("kafkaGlobalExceptionHandler")
+@Component("kafkaGlobalExceptionHandler")
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(TopicNotFoundException.class)

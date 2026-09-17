@@ -24,8 +24,9 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import jakarta.ws.rs.HttpMethod;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.annotation.Order;
 
-@Configuration
+@Configuration("gisSecurityConfig")
 @EnableWebSecurity
 @RequiredArgsConstructor
 @EnableMethodSecurity
@@ -39,7 +40,8 @@ public class SecurityConfig {
         return new RegisterSessionAuthenticationStrategy(new SessionRegistryImpl());
     }
 
-    @Bean
+    @Bean("gisServiceFilterChain")
+    @Order(40)
     public SecurityFilterChain filterChain(
             final HttpSecurity httpSecurity,
             final CustomAuthenticationEntryPoint customAuthenticationEntryPoint

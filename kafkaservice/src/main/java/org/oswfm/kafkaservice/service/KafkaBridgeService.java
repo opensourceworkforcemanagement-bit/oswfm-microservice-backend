@@ -24,7 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 public class KafkaBridgeService {
 
-    @Value("${spring.kafka.bootstrap-servers:localhost:9092}")
+    @Value("${spring.kafka.bootstrap-servers:localhost:9095}")
     private String bootstrapServers;
 
     private final TopicWebSocketHandler topicWebSocketHandler;

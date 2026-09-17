@@ -19,7 +19,7 @@ FROM public.ecr.aws/amazoncorretto/amazoncorretto:21
 
 WORKDIR orderservice
 
-COPY --from=build target/*.jar orderservice.jar
+COPY --from=build target/*-exec.jar orderservice.jar
 
 EXPOSE 1121
 
