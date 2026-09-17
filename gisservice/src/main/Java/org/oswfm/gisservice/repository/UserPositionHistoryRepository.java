@@ -22,6 +22,8 @@ public interface UserPositionHistoryRepository<T extends UserPositionHistory>
 
     List<T> findByUserIdOrderByRecordedAtDesc(Integer userId);
 
+    List<T> findByUserIdOrderByRecordedAtAsc(Integer userId);
+
     List<T> findByRecordedAtAfterOrderByRecordedAtDesc(OffsetDateTime since);
 
     List<T> findByUserIdAndRecordedAtBetweenOrderByRecordedAtDesc(

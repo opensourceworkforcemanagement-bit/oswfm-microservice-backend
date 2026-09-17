@@ -4,7 +4,11 @@ import java.time.OffsetDateTime;
 
 import org.locationtech.jts.geom.Point;
 
+import org.oswfm.gisservice.model.enums.TransportMode;
+
 import jakarta.persistence.Column;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -36,4 +40,8 @@ public abstract class UserPositionHistory {
 
     @Column(name = "recorded_at", nullable = false)
     private OffsetDateTime recordedAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "transport_mode", length = 20)
+    private TransportMode transportMode;
 }

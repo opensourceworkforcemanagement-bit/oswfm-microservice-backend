@@ -32,6 +32,14 @@ spring:
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9095}
 
+oswfm:
+  group-location-buffer:
+    flush-on-timeout: ${GROUP_LOCATION_FLUSH_ON_TIMEOUT:true}
+    flush-timeout-ms: ${GROUP_LOCATION_FLUSH_TIMEOUT_MS:30000}
+    reset-after-publish: ${GROUP_LOCATION_RESET_AFTER_PUBLISH:true}
+    sweep-interval-ms: ${GROUP_LOCATION_SWEEP_INTERVAL_MS:5000}
+    membership-cache-ttl-ms: ${GROUP_LOCATION_MEMBERSHIP_CACHE_TTL_MS:30000}
+
 server:
   port: ${SERVER_PORT:1116}
 

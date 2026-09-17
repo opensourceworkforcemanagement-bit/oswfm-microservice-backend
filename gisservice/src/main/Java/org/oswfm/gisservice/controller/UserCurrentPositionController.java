@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.oswfm.gisservice.dto.UserCurrentPositionDTO;
 import org.oswfm.gisservice.service.UserCurrentPositionService;
+import org.oswfm.commons.model.common.dto.response.CustomResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -56,8 +57,14 @@ public class UserCurrentPositionController {
 
     @PostMapping
     @Operation(summary = "Upsert the current position for a user (insert or update)")
-    public ResponseEntity<UserCurrentPositionDTO> upsert(@Valid @RequestBody UserCurrentPositionDTO dto) {
+    public ResponseEntity<CustomResponse<UserCurrentPositionDTO>> upsert(@Valid @RequestBody UserCurrentPositionDTO dto) {
         return ResponseEntity.ok(service.upsert(dto));
+    }
+
+    @PostMapping("/batch")
+    @Operation(summary = "Upsert current positions for multiple users in a single request")
+    public ResponseEntity<List<CustomResponse<UserCurrentPositionDTO>>> upsertBatch(@Valid @RequestBody List<UserCurrentPositionDTO> dtos) {
+        return ResponseEntity.ok(service.upsertBatch(dtos));
     }
 
     @DeleteMapping("/{userId}")

@@ -43,6 +43,12 @@ public class UserPositionHistoryService {
     }
 
     @Transactional(readOnly = true)
+    public List<UserPositionHistoryDTO> getByUserIdChronological(Window window, Integer userId) {
+        return repo(window).findByUserIdOrderByRecordedAtAsc(userId)
+                .stream().map(this::toDTO).collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
     public List<UserPositionHistoryDTO> getByUserIdInRange(
             Window window, Integer userId, OffsetDateTime from, OffsetDateTime to) {
         return repo(window).findByUserIdAndRecordedAtBetweenOrderByRecordedAtDesc(userId, from, to)
@@ -82,6 +88,7 @@ public class UserPositionHistoryService {
             dto.setLongitude(e.getLocation().getX());
         }
         dto.setRecordedAt(e.getRecordedAt());
+        dto.setTransportMode(e.getTransportMode());
         return dto;
     }
 }

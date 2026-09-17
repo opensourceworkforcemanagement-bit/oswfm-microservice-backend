@@ -3,7 +3,9 @@ package org.oswfm.gisservice.controller;
 import java.time.OffsetDateTime;
 import java.util.List;
 
+import org.oswfm.gisservice.dto.TripDTO;
 import org.oswfm.gisservice.dto.UserPositionHistoryDTO;
+import org.oswfm.gisservice.service.TripSegmentationService;
 import org.oswfm.gisservice.service.UserPositionHistoryService;
 import org.oswfm.gisservice.service.UserPositionHistoryService.Window;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -26,6 +28,7 @@ import lombok.RequiredArgsConstructor;
 public class UserPositionHistoryController {
 
     private final UserPositionHistoryService service;
+    private final TripSegmentationService tripSegmentationService;
 
     @GetMapping("/{window}/since")
     @Operation(summary = "Get all positions in the given window recorded after a timestamp",
@@ -70,5 +73,25 @@ public class UserPositionHistoryController {
             default  -> throw new IllegalArgumentException(
                     "Invalid window: " + days + ". Valid values: 7, 31, 61, 91, 180, 366");
         };
+    }
+
+    @GetMapping("/{window}/user/{userId}/segment-trips")
+    @Operation(summary = "Segment a list of chronological points into trips based on time gaps and movement thresholds",
+               description = "window values: 7, 31, 61, 91, 180, 366")
+    public List<List<UserPositionHistoryDTO>> segmentRawPointsIntoTrips(
+            @PathVariable int window,
+            @PathVariable Integer userId) {
+        List<UserPositionHistoryDTO> chronologicalPoints = service.getByUserIdChronological(resolveWindow(window), userId);
+        return tripSegmentationService.segmentRawPointsIntoTrips(chronologicalPoints);
+    }
+
+    @GetMapping("/{window}/user/{userId}/segment-trips-by-start-time")
+    @Operation(summary = "Segment a list of chronological points into trips, each tagged with its start time",
+               description = "window values: 7, 31, 61, 91, 180, 366")
+    public List<TripDTO> segmentRawPointsIntoTripsByStartTime(
+            @PathVariable int window,
+            @PathVariable Integer userId) {
+        List<UserPositionHistoryDTO> chronologicalPoints = service.getByUserIdChronological(resolveWindow(window), userId);
+        return tripSegmentationService.buildTripsFromLocationStays(chronologicalPoints);
     }
 }

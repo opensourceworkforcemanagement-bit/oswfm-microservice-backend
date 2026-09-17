@@ -2,6 +2,8 @@ package org.oswfm.gisservice.dto;
 
 import java.time.OffsetDateTime;
 
+import org.oswfm.gisservice.model.enums.TransportMode;
+
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
@@ -28,4 +30,6 @@ public class UserCurrentPositionDTO {
     private Double longitude;
 
     private OffsetDateTime lastUpdate;
+
+    private TransportMode transportMode;
 }
