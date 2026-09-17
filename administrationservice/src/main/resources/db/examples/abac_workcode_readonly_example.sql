@@ -1,8 +1,14 @@
 -- ============================================================================
 -- ABAC Example: Allow access to Work Code Management page, deny creation
 -- ============================================================================
--- Scenario: User "jane.doe" (user_id = 1) can VIEW the workforce codes page
--- and READ/EDIT/DELETE existing codes, but CANNOT CREATE new workforce codes.
+-- Scenario: Users in the "Workforce Viewers" group can VIEW the workforce codes
+-- page and READ/EDIT/DELETE existing codes, but CANNOT CREATE new workforce codes.
+--
+-- This demonstrates the decoupled subject attribute model:
+--   - Subject attributes are defined independently (not tied to a user)
+--   - Groups bundle attributes together (e.g., "Workforce Viewers" group)
+--   - Users get attributes via group membership or direct assignment
+--   - Policies match on attribute values regardless of how they were assigned
 --
 -- This is achieved with two policies:
 --   1. A PERMIT policy allowing read/update/delete on the workcode-management resource
@@ -85,13 +91,48 @@ VALUES
 
 
 -- ============================================================================
--- 5. SUBJECT ATTRIBUTES - assign attributes to the user
+-- 5. SUBJECT ATTRIBUTES - define reusable attributes (not tied to any user)
 -- ============================================================================
--- User 1 (jane.doe) has role "workforce_viewer" and belongs to "HR"
-INSERT INTO subject_attributes (subject_attr_id, user_id, attribute_id, attribute_value)
+INSERT INTO subject_attributes (subject_attr_id, attribute_id, attribute_value)
 VALUES
-  (1, 1, 1, 'workforce_viewer'),   -- role = workforce_viewer
-  (2, 1, 2, 'HR');                 -- department = HR
+  (1, 1, 'workforce_viewer'),   -- role = workforce_viewer
+  (2, 2, 'HR');                 -- department = HR
+
+
+-- ============================================================================
+-- 5a. USER GROUP - create a group to bundle these attributes
+-- ============================================================================
+
+-- User group type required by user_groups.user_group_type_id
+INSERT INTO user_group_type (user_group_type_id, type_name, description)
+VALUES (1, 'standard', 'Standard user group');
+
+INSERT INTO user_groups (group_id, group_name, user_group_type_id, description)
+VALUES (1, 'Workforce Viewers', 1, 'Users who can view, edit, and delete but not create workforce codes');
+
+
+-- ============================================================================
+-- 5b. GROUP ATTRIBUTE ASSIGNMENTS - attach attributes to the group
+-- ============================================================================
+INSERT INTO group_subject_attributes (id, group_id, subject_attr_id)
+VALUES
+  (1, 1, 1),   -- group "Workforce Viewers" gets role = workforce_viewer
+  (2, 1, 2);   -- group "Workforce Viewers" gets department = HR
+
+
+-- ============================================================================
+-- 5c. USER GROUP MEMBERSHIPS - assign users to the group
+-- ============================================================================
+-- User 1 (jane.doe), User 2 (john.smith), User 3 (bob.jones) all get
+-- the workforce_viewer role and HR department via group membership
+INSERT INTO user_group_memberships (membership_id, user_id, group_id)
+VALUES
+  (1, 1, 1),   -- jane.doe  -> Workforce Viewers
+  (2, 2, 1),   -- john.smith -> Workforce Viewers
+  (3, 3, 1);   -- bob.jones  -> Workforce Viewers
+
+-- Optionally, assign an attribute directly to a specific user (override/addition)
+-- INSERT INTO user_subject_attributes (id, user_id, subject_attr_id) VALUES (1, 1, 1);
 
 
 -- ============================================================================
@@ -187,15 +228,22 @@ VALUES (
 -- ============================================================================
 -- EVALUATION SUMMARY
 -- ============================================================================
--- When user jane.doe (user_id=1, role=workforce_viewer) accesses:
+-- When any user in the "Workforce Viewers" group accesses:
 --
 --   Resource: Work Code Management (resource_id=1)
+--
+--   The user's attributes are resolved from group membership:
+--     group "Workforce Viewers" -> role=workforce_viewer, department=HR
 --
 --   Action: read   -> Policy 1 matches (PERMIT, priority 10) -> ALLOWED
 --   Action: update -> Policy 1 matches (PERMIT, priority 10) -> ALLOWED
 --   Action: delete -> Policy 1 matches (PERMIT, priority 10) -> ALLOWED
 --   Action: create -> Policy 2 matches (DENY,   priority 20) -> DENIED
 --
--- Result: User can view the page, edit and delete existing codes,
+-- Result: Users can view the page, edit and delete existing codes,
 --         but the "Add Work Code" button should be hidden or disabled.
+--
+-- To add a new user, just add one row to user_group_memberships:
+--   INSERT INTO user_group_memberships (user_id, group_id) VALUES (4, 1);
+-- No need to duplicate subject_attributes or policies.
 -- ============================================================================

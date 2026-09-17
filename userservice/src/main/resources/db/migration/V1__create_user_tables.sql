@@ -25,10 +25,22 @@ CREATE TABLE oswfm_users_audit_log (
 CREATE INDEX idx_oswfm_users_audit_log_user_id ON oswfm_users_audit_log(user_id);
 CREATE INDEX idx_oswfm_users_audit_log_created_at ON oswfm_users_audit_log(created_at);
 
+-- User group types
+CREATE TABLE user_group_type (
+    user_group_type_id SERIAL PRIMARY KEY,
+    type_name VARCHAR(255) UNIQUE NOT NULL,
+    description TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Index for faster queries
+CREATE INDEX idx_user_group_type_type_name ON user_group_type(type_name);
+
 -- User groups
 CREATE TABLE user_groups (
     group_id SERIAL PRIMARY KEY,
     group_name VARCHAR(255) UNIQUE NOT NULL,
+	user_group_type_id INTEGER NOT NULL REFERENCES user_group_type(user_group_type_id),
     description TEXT,
     parent_group_id INTEGER REFERENCES user_groups(group_id) ON DELETE CASCADE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
@@ -37,6 +49,7 @@ CREATE TABLE user_groups (
 -- Index for faster queries
 CREATE INDEX idx_user_groups_group_name ON user_groups(group_name);
 CREATE INDEX idx_user_groups_parent_group_id ON user_groups(parent_group_id);
+CREATE INDEX idx_user_groups_user_group_type_id ON user_groups(user_group_type_id);
 
 CREATE TABLE user_groups_audit_log (
 	audit_log_id SERIAL PRIMARY KEY,

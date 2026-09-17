@@ -6,11 +6,14 @@ import java.util.stream.Collectors;
 import org.oswfm.ResourceNotFoundException;
 import org.oswfm.accesscontrolservice.dto.UserGroupDTO;
 import org.oswfm.accesscontrolservice.dto.UserGroupMembershipDTO;
+import org.oswfm.accesscontrolservice.dto.UserGroupTypeDTO;
 import org.oswfm.accesscontrolservice.model.entity.UserGroup;
 import org.oswfm.accesscontrolservice.model.entity.UserGroupMembership;
+import org.oswfm.accesscontrolservice.model.entity.UserGroupType;
 import org.oswfm.accesscontrolservice.repository.ACUserRepository;
 import org.oswfm.accesscontrolservice.repository.UserGroupMembershipRepository;
 import org.oswfm.accesscontrolservice.repository.UserGroupRepository;
+import org.oswfm.accesscontrolservice.repository.UserGroupTypeRepository;
 import org.oswfm.commons.model.user.entity.UserEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +26,7 @@ public class UserGroupService {
 
     private final UserGroupRepository userGroupRepository;
     private final UserGroupMembershipRepository userGroupMembershipRepository;
+    private final UserGroupTypeRepository userGroupTypeRepository;
     private final ACUserRepository userRepository;
 
     // ========== Group CRUD ==========
@@ -46,6 +50,7 @@ public class UserGroupService {
         UserGroup group = new UserGroup();
         group.setGroupName(dto.getGroupName());
         group.setDescription(dto.getDescription());
+        group.setGroupType(resolveGroupType(dto.getUserGroupTypeId()));
 
         if (dto.getParentGroupId() != null) {
             UserGroup parentGroup = userGroupRepository.findById(dto.getParentGroupId())
@@ -64,6 +69,7 @@ public class UserGroupService {
 
         existing.setGroupName(dto.getGroupName());
         existing.setDescription(dto.getDescription());
+        existing.setGroupType(resolveGroupType(dto.getUserGroupTypeId()));
 
         if (dto.getParentGroupId() != null) {
             UserGroup parentGroup = userGroupRepository.findById(dto.getParentGroupId())
@@ -75,6 +81,29 @@ public class UserGroupService {
 
         UserGroup saved = userGroupRepository.save(existing);
         return convertToGroupDTO(saved);
+    }
+
+    private UserGroupType resolveGroupType(Integer userGroupTypeId) {
+        return userGroupTypeRepository.findById(userGroupTypeId)
+                .orElseThrow(() -> new ResourceNotFoundException("UserGroupType", "id", userGroupTypeId));
+    }
+
+    // ========== Group Type Lookup ==========
+
+    @Transactional(readOnly = true)
+    public List<UserGroupTypeDTO> getAllGroupTypes() {
+        return userGroupTypeRepository.findAll().stream()
+                .map(this::convertToGroupTypeDTO)
+                .collect(Collectors.toList());
+    }
+
+    private UserGroupTypeDTO convertToGroupTypeDTO(UserGroupType type) {
+        UserGroupTypeDTO dto = new UserGroupTypeDTO();
+        dto.setUserGroupTypeId(type.getUserGroupTypeId());
+        dto.setTypeName(type.getTypeName());
+        dto.setDescription(type.getDescription());
+        dto.setCreatedAt(type.getCreatedAt());
+        return dto;
     }
 
     @Transactional
@@ -134,6 +163,10 @@ public class UserGroupService {
         if (group.getParentGroup() != null) {
             dto.setParentGroupId(group.getParentGroup().getGroupId());
             dto.setParentGroupName(group.getParentGroup().getGroupName());
+        }
+        if (group.getGroupType() != null) {
+            dto.setUserGroupTypeId(group.getGroupType().getUserGroupTypeId());
+            dto.setUserGroupTypeName(group.getGroupType().getTypeName());
         }
         dto.setCreatedAt(group.getCreatedAt());
         return dto;

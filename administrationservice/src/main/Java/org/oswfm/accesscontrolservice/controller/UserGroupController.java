@@ -2,6 +2,7 @@ package org.oswfm.accesscontrolservice.controller;
 
 import org.oswfm.accesscontrolservice.dto.UserGroupDTO;
 import org.oswfm.accesscontrolservice.dto.UserGroupMembershipDTO;
+import org.oswfm.accesscontrolservice.dto.UserGroupTypeDTO;
 import org.oswfm.accesscontrolservice.service.UserGroupService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -81,5 +82,13 @@ public class UserGroupController {
     public ResponseEntity<Void> removeUserFromGroup(@PathVariable Integer membershipId) {
         userGroupService.removeUserFromGroup(membershipId);
         return ResponseEntity.noContent().build();
+    }
+
+    // ========== Group Type Lookup ==========
+
+    @GetMapping("/types")
+    @Operation(summary = "Get all user group types")
+    public ResponseEntity<List<UserGroupTypeDTO>> getAllGroupTypes() {
+        return ResponseEntity.ok(userGroupService.getAllGroupTypes());
     }
 }
