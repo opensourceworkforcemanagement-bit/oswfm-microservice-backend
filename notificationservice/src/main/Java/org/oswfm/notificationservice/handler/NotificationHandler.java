@@ -1,6 +1,7 @@
 package org.oswfm.notificationservice.handler;
 
 import org.oswfm.kafkaserviceclient.service.KafkaPublisherService;
+import org.oswfm.commons.model.user.Token;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -12,7 +13,6 @@ import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 import java.io.IOException;
-import java.util.Base64;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
@@ -47,7 +47,7 @@ public class NotificationHandler extends TextWebSocketHandler {
     public void afterConnectionEstablished(WebSocketSession session) {
         log.info("[Notifications] Client connected: sessionId={} uri={}", session.getId(), session.getUri());
         String token = extractParam(session, "token");
-        String userId = extractUserIdFromToken(token);
+        String userId = Token.extractUserId(token);
         String since = extractParam(session, "since");
 
         if (userId == null) {
@@ -73,7 +73,7 @@ public class NotificationHandler extends TextWebSocketHandler {
         sessions.remove(session);
         sessionMeta.remove(session.getId());
 
-        String userId = extractUserIdFromToken(extractParam(session, "token"));
+        String userId = Token.extractUserId(extractParam(session, "token"));
         if (userId != null) {
             Set<WebSocketSession> set = userSessions.get(userId);
             if (set != null) {
@@ -90,7 +90,7 @@ public class NotificationHandler extends TextWebSocketHandler {
         log.error("[Notifications] Transport error: sessionId={}", session.getId(), exception);
         sessions.remove(session);
 
-        String userId = extractUserIdFromToken(extractParam(session, "token"));
+        String userId = Token.extractUserId(extractParam(session, "token"));
         if (userId != null) {
             Set<WebSocketSession> set = userSessions.get(userId);
             if (set != null) {
@@ -182,21 +182,6 @@ public class NotificationHandler extends TextWebSocketHandler {
                     log.error("[Notifications] Failed to send to {}: {}", s.getId(), e.getMessage());
                 }
             }
-        }
-    }
-
-    private String extractUserIdFromToken(String token) {
-        if (token == null || token.isBlank()) return null;
-        try {
-            String[] parts = token.split("\\.");
-            if (parts.length < 2) return null;
-            String json = new String(Base64.getUrlDecoder().decode(parts[1]));
-            JsonNode claims = objectMapper.readTree(json);
-            JsonNode userIdNode = claims.get("userId");
-            return userIdNode != null && !userIdNode.isNull() ? userIdNode.asText() : null;
-        } catch (IOException e) {
-            log.warn("[Notifications] Failed to extract userId from token: {}", e.getMessage());
-            return null;
         }
     }
 

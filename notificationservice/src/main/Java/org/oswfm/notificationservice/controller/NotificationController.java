@@ -4,9 +4,11 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
 
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -15,6 +17,7 @@ import org.oswfm.kafkaserviceclient.service.KafkaPublisherService;
 import org.oswfm.notificationservice.handler.NotificationHandler;
 import org.oswfm.commons.model.common.NotificationRequest;
 import org.oswfm.commons.model.common.RestMessageRequest.Payload;
+import org.oswfm.commons.model.user.Token;
 import org.oswfm.notificationservice.service.FcmService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -33,13 +36,22 @@ public class NotificationController {
     private final ObjectMapper objectMapper;
 
     @PostMapping("/send")
-    public ResponseEntity<Map<String, Object>> send(@RequestBody NotificationRequest request) throws Exception {
+    public ResponseEntity<Map<String, Object>> send(
+            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationHeader,
+            @RequestBody NotificationRequest request) throws Exception {
 
         if (request.getId() == null || request.getId().isBlank()) {
             request.setId(UUID.randomUUID().toString());
         }
         if (request.getTimestamp() == 0) {
             request.setTimestamp(Instant.now().toEpochMilli());
+        }
+
+        if (Token.isBearerToken(authorizationHeader)) {
+            String userId = Token.extractUserId(Token.getJwt(authorizationHeader));
+            if (userId != null) {
+                request.setRequestingUserId(userId);
+            }
         }
 
         String json = objectMapper.writeValueAsString(request);
