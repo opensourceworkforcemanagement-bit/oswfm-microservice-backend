@@ -264,17 +264,33 @@ jobs:
         with:
           ref: ${{ github.event_name == 'pull_request' && github.head_ref || 'development' }}
 
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      # Fill ~/.m2 so Trivy can read poms/BOMs locally instead of hitting
+      # Maven Central (which rate-limits shared runner IPs with 429s)
+      - name: Populate local Maven repository
+        run: mvn -B -ntp -DskipTests install
+
       - name: Run Trivy
         run: |
           mkdir -p trivy-results ~/.cache/trivy
           trivy() {
-            docker run --rm -v "$PWD:/src" -w /src -v "$HOME/.cache/trivy:/root/.cache/trivy" \
-              aquasec/trivy:latest fs --scanners vuln --severity CRITICAL,HIGH,MEDIUM "$@" .
+            docker run --rm -v "$PWD:/src" -w /src \
+              -v "$HOME/.cache/trivy:/root/.cache/trivy" \
+              -v "$HOME/.m2:/root/.m2:ro" \
+              aquasec/trivy:latest "$@"
           }
-          # Readable table in the log, then machine formats for summary/Security tab
-          trivy --format table
-          trivy --format json  --output trivy-results/trivy.json
-          trivy --format sarif --output trivy-results/trivy.sarif
+          # Scan once (offline: poms resolved from local ~/.m2 only)
+          trivy fs --scanners vuln --severity CRITICAL,HIGH,MEDIUM --offline-scan \
+            --format json --output trivy-results/trivy.json .
+          # Readable table in the log, then SARIF for the Security tab — no rescans
+          trivy convert --format table trivy-results/trivy.json
+          trivy convert --format sarif --output trivy-results/trivy.sarif trivy-results/trivy.json
 
       - name: Summarize findings
         if: always()
