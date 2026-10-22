@@ -383,3 +383,31 @@ jobs:
         with:
           sarif_file: kics-results/results.sarif
           category: kics
+
+  # Combine the results of all scans into one HTML report
+  report:
+    name: Security report (HTML)
+    runs-on: ubuntu-latest
+    needs: [sonarqube, semgrep, trivy, kics]
+    if: ${{ !cancelled() }}   # still build the report when a scan job fails
+    steps:
+      - name: Checkout report script
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/scripts
+
+      - name: Download scan results
+        uses: actions/download-artifact@v4
+        continue-on-error: true   # a failed scan may not have uploaded anything
+        with:
+          pattern: '*-results'
+          path: scan-results   # one folder per artifact, e.g. scan-results/trivy-results/
+
+      - name: Generate HTML report
+        run: python3 .github/scripts/security_report.py scan-results security-report/index.html
+
+      - name: Upload report
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-report
+          path: security-report/
