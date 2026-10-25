@@ -16,6 +16,8 @@
 
 	<properties>
 		<java.version>21</java.version>
+		<!-- Overrides the Tomcat version Spring Boot 3.5.6 manages (10.1.46) to fix CVE-2026-41293 -->
+		<tomcat.version>10.1.55</tomcat.version>
 		<spring-cloud.version>2025.0.0</spring-cloud.version>
 		<bouncycastle.version>1.77</bouncycastle.version>
 		<jsonwebtoken.version>0.12.3</jsonwebtoken.version>
