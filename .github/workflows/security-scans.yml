@@ -403,11 +403,22 @@ jobs:
           pattern: '*-results'
           path: scan-results   # one folder per artifact, e.g. scan-results/trivy-results/
 
+      # One UTC timestamp for the report title, file name and artifact name
+      # (no colons: artifact names do not allow them)
+      - name: Set report timestamp
+        run: |
+          echo "REPORT_TS=$(date -u +%Y%m%d-%H%M%SZ)" >> "$GITHUB_ENV"
+          echo "REPORT_TIME=$(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> "$GITHUB_ENV"
+
       - name: Generate HTML report
-        run: python3 .github/scripts/security_report.py scan-results security-report/index.html
+        run: >
+          python3 .github/scripts/security_report.py scan-results
+          "security-report/security-report-$REPORT_TS.html"
+          --title "Security scan report - $REPORT_TIME"
+          --artifact-name "security-report-$REPORT_TS"
 
       - name: Upload report
         uses: actions/upload-artifact@v4
         with:
-          name: security-report
+          name: security-report-${{ env.REPORT_TS }}
           path: security-report/
